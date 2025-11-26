@@ -1,0 +1,211 @@
+Quiero que actúes como arquitecto de software senior especializado en proyectos empresariales modularizados (NestJS + Next.js + Prisma + Docker).
+
+Tu tarea será leer, analizar y trabajar estrictamente a partir del archivo:
+
+/docs/documentacion/Documentación.md
+
+
+(Si el archivo está en PDF, asume que es la conversión fiel del documento final del proyecto.)
+
+Este documento contiene toda la información oficial del sistema:
+requisitos, casos de uso, módulos funcionales, entidades, modelo entidad-relación, arquitectura, diagramas y reglas de negocio.
+
+🧠 PRIMERA FASE — ANÁLISIS (NO GENERES AÚN CÓDIGO)
+
+Lee completamente /docs/documentacion/Documentación.md y luego respóndeme únicamente con un resumen técnico estructurado, que incluya:
+
+1. Módulos principales del backend
+
+Derívalos estrictamente del documento (autenticación, usuarios, mesas/canchas, inventario, ventas, caja, reportes, configuración, auditoría, logs/MongoDB).
+
+2. Rutas principales del frontend (Next.js)
+
+Basadas en el grafo de navegación y módulos del sistema.
+
+3. Entidades del modelo de datos y relaciones
+
+Incluye schemas de PostgreSQL:
+
+auth
+
+core
+
+mesas
+
+inventario
+
+ventas
+
+public (si aplica)
+
+Incluye también aclaración de que los logs y auditoría extendida van en MongoDB como base NoSQL.
+
+4. Arquitectura general recomendada
+
+Capas, responsabilidades, tecnologías definidas en el documento.
+
+5. Aclaraciones importantes a tener en cuenta antes de generar código
+
+Incluye reglas clave del negocio:
+
+Mesas: tiempo gratis con consumo, cobro solo sin consumo.
+
+Canchas: jamás se cobra tiempo.
+
+Métodos de pago: efectivo / Nequi / mixto.
+
+Caja: apertura → ventas → cierre → reporte diario.
+
+Dashboard: mostrar faltantes al iniciar sesión.
+
+MongoDB no afecta operación principal.
+
+Sistema interno, sin portal público ni reservas online.
+
+NO generes ningún archivo, carpeta o código todavía.
+Solo el análisis.
+
+🧱 SEGUNDA FASE — GENERAR ARQUITECTURA BASE (SÍ GENERAR CÓDIGO)
+
+Después de aprobar el análisis, y solo cuando yo lo indique explícitamente con:
+
+"GENERAR ARQUITECTURA"
+
+Entonces debes generar la estructura completa del proyecto, pero sin implementar lógica de negocio.
+
+🎯 OBJETIVO EXACTO DE LA ARQUITECTURA BASE
+Estructura del proyecto
+/backend
+/frontend
+/docker
+/prisma
+/docs
+
+🟦 BACKEND → NestJS + TypeScript
+
+Genera un proyecto NestJS con módulos vacíos (solo archivos base):
+
+autenticación
+
+usuarios-roles
+
+mesas-canchas
+
+inventario
+
+ventas
+
+caja
+
+reportes
+
+configuración
+
+auditoría
+
+logs (MongoDB)
+
+Incluye:
+
+main.ts
+
+app.module.ts
+
+tsconfig.json
+
+package.json
+
+estructura src/modules/**/ por módulo
+
+Nota:
+Solo declara módulos, controladores y servicios vacíos.
+No implementes lógica ni endpoints reales.
+
+🟩 FRONTEND → Next.js + Tailwind + shadcn/ui
+
+Genera las rutas base según el documento:
+
+/login
+
+/dashboard
+
+/mesas-canchas
+
+/inventario
+
+/ventas
+
+/caja
+
+/reportes
+
+/configuracion
+
+/usuarios
+
+Incluye:
+
+Setup de Next.js 15 (App Router)
+
+Tailwind configurado
+
+shadcn/ui instalado
+
+Layout base y estructura /app/**
+
+No generes pantallas funcionales, solo el esqueleto.
+
+🟧 PRISMA ORM — PostgreSQL
+
+Genera un archivo:
+
+/prisma/schema.prisma
+
+
+El contenido debe ser una transcripción estricta del MER del documento, respetando:
+
+Todos los schemas (auth, core, mesas, inventario, ventas)
+
+Entidades, atributos y relaciones exactas
+
+Claves primarias y foráneas según el documento
+
+Nada adicional, nada inventado
+
+🐳 DOCKER
+
+Crear carpeta /docker con:
+
+docker-compose.yml
+
+Servicios mínimos:
+
+backend (NestJS)
+
+frontend (Next.js)
+
+postgres
+
+mongodb según el documento
+
+Debe incluir:
+
+Networks
+
+Volúmenes para PostgreSQL
+
+Variables de entorno básicas
+
+Puertos expuestos (3200 frontend, 4200 backend, 5432/5433 postgres)
+
+📌 IMPORTANTE
+
+No crear lógica de negocio todavía.
+
+Solo arquitectura inicial y archivos base.
+
+Esperar mi confirmación explícita.
+
+Cuando esté listo para generar código, yo escribiré:
+
+➡️ "GENERAR ARQUITECTURA"

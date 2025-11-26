@@ -1,0 +1,341 @@
+// Schema Prisma basado en el Modelo Entidad-Relación del documento
+// Organizado por schemas de PostgreSQL: auth, core, mesas, inventario, ventas
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["multiSchema"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  schemas  = ["auth", "core", "mesas", "inventario", "ventas", "public"]
+}
+
+// ============================================
+// SCHEMA AUTH
+// ============================================
+
+model Rol {
+  rolId          Int            @id @default(autoincrement()) @map("rol_id") @db.Integer
+  rolNombre      String         @map("rol_nombre") @db.VarChar(100)
+  rolDescripcion String?        @map("rol_descripcion") @db.Text
+  createdAt      DateTime       @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt      DateTime       @updatedAt @map("updated_at") @db.Timestamp(6)
+
+  // Relaciones
+  usuarios       Usuario[]
+  rolPermisos    RolPermiso[]
+
+  @@schema("auth")
+  @@map("rol")
+}
+
+model Permiso {
+  permisoId          Int            @id @default(autoincrement()) @map("permiso_id") @db.Integer
+  permisoNombre      String         @map("permiso_nombre") @db.VarChar(100)
+  permisoDescripcion String?        @map("permiso_descripcion") @db.Text
+  createdAt          DateTime       @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt          DateTime       @updatedAt @map("updated_at") @db.Timestamp(6)
+
+  // Relaciones
+  rolPermisos        RolPermiso[]
+
+  @@schema("auth")
+  @@map("permiso")
+}
+
+model RolPermiso {
+  rolId     Int      @map("rol_id") @db.Integer
+  permisoId Int      @map("permiso_id") @db.Integer
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamp(6)
+
+  // Relaciones
+  rol       Rol      @relation(fields: [rolId], references: [rolId], onDelete: Cascade)
+  permiso   Permiso  @relation(fields: [permisoId], references: [permisoId], onDelete: Cascade)
+
+  @@id([rolId, permisoId])
+  @@schema("auth")
+  @@map("rol_permiso")
+}
+
+model Usuario {
+  usuarioId       Int            @id @default(autoincrement()) @map("usuario_id") @db.Integer
+  usuarioNombre   String         @map("usuario_nombre") @db.VarChar(200)
+  usuarioUsuario  String         @unique @map("usuario_usuario") @db.VarChar(100)
+  usuarioContrasena String       @map("usuario_contrasena") @db.VarChar(255)
+  usuarioEstado   String         @default("activo") @map("usuario_estado") @db.VarChar(20)
+  rolId           Int            @map("rol_id") @db.Integer
+  createdAt       DateTime       @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt       DateTime       @updatedAt @map("updated_at") @db.Timestamp(6)
+
+  // Relaciones
+  rol             Rol            @relation(fields: [rolId], references: [rolId])
+  auditorias      Auditoria[]
+  ventas          Venta[]
+  movimientos     MovimientoInventario[]
+  usosMesa        UsoMesa[]
+  cajas           Caja[]
+
+  @@schema("auth")
+  @@map("usuario")
+}
+
+// ============================================
+// SCHEMA CORE
+// ============================================
+
+model Auditoria {
+  auditoriaId    Int      @id @default(autoincrement()) @map("auditoria_id") @db.Integer
+  auditoriaTabla String   @map("auditoria_tabla") @db.VarChar(100)
+  auditoriaAccion String  @map("auditoria_accion") @db.VarChar(50)
+  auditoriaFecha DateTime @default(now()) @map("auditoria_fecha") @db.Timestamp(6)
+  usuarioId      Int      @map("usuario_id") @db.Integer
+  auditoriaDatos Json?    @map("auditoria_datos") @db.JsonB
+
+  // Relaciones
+  usuario        Usuario @relation(fields: [usuarioId], references: [usuarioId])
+
+  @@schema("core")
+  @@map("auditoria")
+}
+
+// ============================================
+// SCHEMA MESAS
+// ============================================
+
+model TipoMesa {
+  tipoMesaId          Int            @id @default(autoincrement()) @map("tipo_mesa_id") @db.Integer
+  tipoMesaNombre      String         @map("tipo_mesa_nombre") @db.VarChar(100)
+  tipoMesaDescripcion String?        @map("tipo_mesa_descripcion") @db.Text
+  createdAt           DateTime       @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt           DateTime       @updatedAt @map("updated_at") @db.Timestamp(6)
+
+  // Relaciones
+  mesas               Mesa[]
+
+  @@schema("mesas")
+  @@map("tipo_mesa")
+}
+
+model Tarifa {
+  tarifaId            Int            @id @default(autoincrement()) @map("tarifa_id") @db.Integer
+  tarifaPorMinuto     Decimal         @map("tarifa_por_minuto") @db.Decimal(10, 2)
+  tarifaPorIntervalo  Decimal?       @map("tarifa_por_intervalo") @db.Decimal(10, 2)
+  createdAt           DateTime       @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt           DateTime       @updatedAt @map("updated_at") @db.Timestamp(6)
+
+  // Relaciones
+  mesas               Mesa[]
+
+  @@schema("mesas")
+  @@map("tarifa")
+}
+
+model Intervalo {
+  intervaloId      Int            @id @default(autoincrement()) @map("intervalo_id") @db.Integer
+  intervaloDuracion Int          @map("intervalo_duracion") @db.Integer
+  intervaloEstado  String        @default("activo") @map("intervalo_estado") @db.VarChar(20)
+  createdAt        DateTime      @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt        DateTime      @updatedAt @map("updated_at") @db.Timestamp(6)
+
+  // Relaciones
+  usosMesa         UsoMesa[]
+
+  @@schema("mesas")
+  @@map("intervalo")
+}
+
+model Mesa {
+  mesaId      Int            @id @default(autoincrement()) @map("mesa_id") @db.Integer
+  mesaNumero  String         @unique @map("mesa_numero") @db.VarChar(50)
+  mesaEstado  String         @default("disponible") @map("mesa_estado") @db.VarChar(20)
+  tipoMesaId  Int            @map("tipo_mesa_id") @db.Integer
+  tarifaId    Int            @map("tarifa_id") @db.Integer
+  createdAt   DateTime       @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt   DateTime       @updatedAt @map("updated_at") @db.Timestamp(6)
+
+  // Relaciones
+  tipoMesa    TipoMesa       @relation(fields: [tipoMesaId], references: [tipoMesaId])
+  tarifa      Tarifa         @relation(fields: [tarifaId], references: [tarifaId])
+  usosMesa    UsoMesa[]
+
+  @@schema("mesas")
+  @@map("mesa")
+}
+
+model UsoMesa {
+  usoMesaId            Int            @id @default(autoincrement()) @map("uso_mesa_id") @db.Integer
+  usoMesaFechaInicio  DateTime       @map("uso_mesa_fecha_inicio") @db.Timestamp(6)
+  usoMesaFechaFin     DateTime?      @map("uso_mesa_fecha_fin") @db.Timestamp(6)
+  usoMesaDuracion     Int?           @map("uso_mesa_duracion") @db.Integer
+  usoMesaCostoCalculado Decimal?     @map("uso_mesa_costo_calculado") @db.Decimal(10, 2)
+  usoMesaEstado        String        @default("activo") @map("uso_mesa_estado") @db.VarChar(20)
+  mesaId               Int           @map("mesa_id") @db.Integer
+  intervaloId          Int?          @map("intervalo_id") @db.Integer
+  usuarioId            Int           @map("usuario_id") @db.Integer
+  createdAt            DateTime      @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt            DateTime      @updatedAt @map("updated_at") @db.Timestamp(6)
+
+  // Relaciones
+  mesa                 Mesa          @relation(fields: [mesaId], references: [mesaId])
+  intervalo            Intervalo?    @relation(fields: [intervaloId], references: [intervaloId])
+  usuario              Usuario       @relation(fields: [usuarioId], references: [usuarioId])
+  venta                Venta?
+
+  @@schema("mesas")
+  @@map("uso_mesa")
+}
+
+// ============================================
+// SCHEMA INVENTARIO
+// ============================================
+
+model Categoria {
+  categoriaId          Int            @id @default(autoincrement()) @map("categoria_id") @db.Integer
+  categoriaNombre      String         @map("categoria_nombre") @db.VarChar(100)
+  categoriaDescripcion String?        @map("categoria_descripcion") @db.Text
+  createdAt            DateTime       @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt            DateTime       @updatedAt @map("updated_at") @db.Timestamp(6)
+
+  // Relaciones
+  subcategorias       Subcategoria[]
+
+  @@schema("inventario")
+  @@map("categoria")
+}
+
+model Subcategoria {
+  subcategoriaId          Int            @id @default(autoincrement()) @map("subcategoria_id") @db.Integer
+  subcategoriaNombre      String         @map("subcategoria_nombre") @db.VarChar(100)
+  subcategoriaDescripcion String?        @map("subcategoria_descripcion") @db.Text
+  categoriaId             Int            @map("categoria_id") @db.Integer
+  createdAt               DateTime       @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt               DateTime       @updatedAt @map("updated_at") @db.Timestamp(6)
+
+  // Relaciones
+  categoria               Categoria      @relation(fields: [categoriaId], references: [categoriaId])
+  productos               Producto[]
+
+  @@schema("inventario")
+  @@map("subcategoria")
+}
+
+model Producto {
+  productoId            Int            @id @default(autoincrement()) @map("producto_id") @db.Integer
+  productoNombre        String         @map("producto_nombre") @db.VarChar(200)
+  productoPrecioVenta   Decimal        @map("producto_precio_venta") @db.Decimal(10, 2)
+  productoPrecioCosto   Decimal?       @map("producto_precio_costo") @db.Decimal(10, 2)
+  productoStockActual   Int            @default(0) @map("producto_stock_actual") @db.Integer
+  productoStockMinimo   Int            @default(0) @map("producto_stock_minimo") @db.Integer
+  productoEstado        String         @default("activo") @map("producto_estado") @db.VarChar(20)
+  subcategoriaId        Int            @map("subcategoria_id") @db.Integer
+  createdAt             DateTime       @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt             DateTime       @updatedAt @map("updated_at") @db.Timestamp(6)
+
+  // Relaciones
+  subcategoria          Subcategoria  @relation(fields: [subcategoriaId], references: [subcategoriaId])
+  movimientos           MovimientoInventario[]
+  detallesVenta         DetalleVenta[]
+
+  @@schema("inventario")
+  @@map("producto")
+}
+
+model MovimientoInventario {
+  movimientoId       Int            @id @default(autoincrement()) @map("movimiento_id") @db.Integer
+  movimientoTipo     String        @map("movimiento_tipo") @db.VarChar(20)
+  movimientoCantidad Int           @map("movimiento_cantidad") @db.Integer
+  movimientoFecha    DateTime      @default(now()) @map("movimiento_fecha") @db.Timestamp(6)
+  movimientoMotivo   String?       @map("movimiento_motivo") @db.Text
+  productoId         Int           @map("producto_id") @db.Integer
+  usuarioId          Int           @map("usuario_id") @db.Integer
+  createdAt          DateTime      @default(now()) @map("created_at") @db.Timestamp(6)
+
+  // Relaciones
+  producto           Producto      @relation(fields: [productoId], references: [productoId])
+  usuario            Usuario       @relation(fields: [usuarioId], references: [usuarioId])
+
+  @@schema("inventario")
+  @@map("movimiento_inventario")
+}
+
+// ============================================
+// SCHEMA VENTAS
+// ============================================
+
+model MetodoPago {
+  metodoPagoId          Int            @id @default(autoincrement()) @map("metodo_pago_id") @db.Integer
+  metodoPagoNombre      String         @map("metodo_pago_nombre") @db.VarChar(50)
+  metodoPagoDescripcion String?       @map("metodo_pago_descripcion") @db.Text
+  createdAt             DateTime       @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt             DateTime       @updatedAt @map("updated_at") @db.Timestamp(6)
+
+  // Relaciones
+  ventas                Venta[]
+
+  @@schema("ventas")
+  @@map("metodo_pago")
+}
+
+model Venta {
+  ventaId        Int            @id @default(autoincrement()) @map("venta_id") @db.Integer
+  ventaTotal     Decimal        @map("venta_total") @db.Decimal(10, 2)
+  ventaFecha     DateTime       @default(now()) @map("venta_fecha") @db.Timestamp(6)
+  ventaEfectivo  Decimal?       @map("venta_efectivo") @db.Decimal(10, 2)
+  ventaNequi     Decimal?       @map("venta_nequi") @db.Decimal(10, 2)
+  metodoPagoId  Int            @map("metodo_pago_id") @db.Integer
+  usuarioId      Int            @map("usuario_id") @db.Integer
+  usoMesaId      Int?           @unique @map("uso_mesa_id") @db.Integer
+  createdAt      DateTime       @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt      DateTime       @updatedAt @map("updated_at") @db.Timestamp(6)
+
+  // Relaciones
+  metodoPago     MetodoPago     @relation(fields: [metodoPagoId], references: [metodoPagoId])
+  usuario        Usuario       @relation(fields: [usuarioId], references: [usuarioId])
+  usoMesa        UsoMesa?      @relation(fields: [usoMesaId], references: [usoMesaId])
+  detallesVenta  DetalleVenta[]
+
+  @@schema("ventas")
+  @@map("venta")
+}
+
+model DetalleVenta {
+  detalleVentaId          Int            @id @default(autoincrement()) @map("detalle_venta_id") @db.Integer
+  detalleVentaCantidad    Int            @map("detalle_venta_cantidad") @db.Integer
+  detalleVentaPrecioUnitario Decimal     @map("detalle_venta_precio_unitario") @db.Decimal(10, 2)
+  detalleVentaSubtotal    Decimal        @map("detalle_venta_subtotal") @db.Decimal(10, 2)
+  ventaId                 Int            @map("venta_id") @db.Integer
+  productoId              Int            @map("producto_id") @db.Integer
+  createdAt               DateTime       @default(now()) @map("created_at") @db.Timestamp(6)
+
+  // Relaciones
+  venta                   Venta          @relation(fields: [ventaId], references: [ventaId])
+  producto                Producto       @relation(fields: [productoId], references: [productoId])
+
+  @@schema("ventas")
+  @@map("detalle_venta")
+}
+
+// ============================================
+// SCHEMA PUBLIC (Caja)
+// ============================================
+
+model Caja {
+  cajaId            Int            @id @default(autoincrement()) @map("caja_id") @db.Integer
+  cajaMontoInicial  Decimal        @map("caja_monto_inicial") @db.Decimal(10, 2)
+  cajaMontoFinal    Decimal?       @map("caja_monto_final") @db.Decimal(10, 2)
+  cajaFechaApertura DateTime       @default(now()) @map("caja_fecha_apertura") @db.Timestamp(6)
+  cajaFechaCierre   DateTime?      @map("caja_fecha_cierre") @db.Timestamp(6)
+  cajaEstado        String         @default("abierta") @map("caja_estado") @db.VarChar(20)
+  usuarioId         Int            @map("usuario_id") @db.Integer
+  createdAt         DateTime       @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt         DateTime       @updatedAt @map("updated_at") @db.Timestamp(6)
+
+  // Relaciones
+  usuario           Usuario        @relation(fields: [usuarioId], references: [usuarioId])
+
+  @@schema("public")
+  @@map("caja")
+}
+
