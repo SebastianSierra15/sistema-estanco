@@ -1,23 +1,21 @@
-FROM node:20-alpine
+FROM node:20-slim
+
+RUN apt-get update && apt-get install -y openssl
 
 WORKDIR /app
 
-# Copy package files
+# Copiamos paquetes primero
 COPY package*.json ./
 COPY prisma ./prisma/
 
-# Install dependencies
-RUN npm ci
+# Instalamos dependencias dentro del contenedor
+RUN npm install
 
-# Copy source code
-COPY . .
-
-# Generate Prisma Client
+# Generamos Prisma dentro del contenedor
 RUN npx prisma generate
 
-# Expose port
+# Copiamos el resto
+COPY . .
+
 EXPOSE 4200
-
-# Start application
 CMD ["npm", "run", "start:dev"]
-

@@ -10,6 +10,7 @@ import { ReportesModule } from './modules/reportes/reportes.module';
 import { ConfiguracionModule } from './modules/configuracion/configuracion.module';
 import { AuditoriaModule } from './modules/auditoria/auditoria.module';
 import { LogsModule } from './modules/logs/logs.module';
+import { PrismaService } from './prisma/prisma.service';
 
 @Module({
   imports: [
@@ -29,7 +30,7 @@ import { LogsModule } from './modules/logs/logs.module';
     LogsModule,
   ],
   controllers: [],
-  providers: [],
+  providers: [PrismaService],
+  exports: [PrismaService],
 })
 export class AppModule {}
-

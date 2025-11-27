@@ -57,7 +57,8 @@ services:
     ports:
       - "4200:4200"
     volumes:
-      - ../backend:/app
+      - ../backend/src:/app/src
+      - ../backend/prisma:/app/prisma
       - /app/node_modules
     networks:
       - sistema-estanco-network
