@@ -6,7 +6,7 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
-import { PrismaService } from '../../prisma/prisma.service';
+import { PrismaService } from '@/prisma/prisma.service';
 import { LoginDto } from './dto/login.dto';
 import { AuthResponseDto } from './dto/auth-response.dto';
 
@@ -21,11 +21,19 @@ export class AuthService {
   async login(loginDto: LoginDto): Promise<AuthResponseDto> {
     const { usuario, contrasena } = loginDto;
 
-    // Buscar usuario por nombre de usuario
+    // Traer rol + permisos del rol
     const usuarioEncontrado = await this.prisma.usuario.findUnique({
       where: { usuarioUsuario: usuario },
       include: {
-        rol: true,
+        rol: {
+          include: {
+            rolPermisos: {
+              include: {
+                permiso: true,
+              },
+            },
+          },
+        },
       },
     });
 
@@ -33,12 +41,10 @@ export class AuthService {
       throw new UnauthorizedException('Credenciales inválidas');
     }
 
-    // Verificar estado del usuario
     if (usuarioEncontrado.usuarioEstado !== 'activo') {
       throw new UnauthorizedException('Usuario inactivo');
     }
 
-    // Verificar contraseña
     const isPasswordValid = await bcrypt.compare(
       contrasena,
       usuarioEncontrado.usuarioContrasena,
@@ -48,18 +54,25 @@ export class AuthService {
       throw new UnauthorizedException('Credenciales inválidas');
     }
 
-    // Generar JWT token
+    // Construir array de permisos (nombres)
+    const permisos: string[] =
+      usuarioEncontrado.rol.rolPermisos?.map(
+        (rp) => rp.permiso.permisoNombre,
+      ) ?? [];
+
+    // Payload del token con permisos
     const payload = {
       sub: usuarioEncontrado.usuarioId,
       usuario: usuarioEncontrado.usuarioUsuario,
       rol: usuarioEncontrado.rol.rolNombre,
+      permisos,
     };
 
     const expires =
       Number(this.configService.get<string>('JWT_EXPIRES_IN')) || 86400;
 
     const access_token = this.jwtService.sign(payload, {
-      expiresIn: expires, // en segundos
+      expiresIn: expires,
     });
 
     return {
@@ -73,6 +86,7 @@ export class AuthService {
           rolNombre: usuarioEncontrado.rol.rolNombre,
         },
       },
+      permisos,
     };
   }
 
@@ -80,7 +94,15 @@ export class AuthService {
     const usuario = await this.prisma.usuario.findUnique({
       where: { usuarioId },
       include: {
-        rol: true,
+        rol: {
+          include: {
+            rolPermisos: {
+              include: {
+                permiso: true,
+              },
+            },
+          },
+        },
       },
     });
 
@@ -88,11 +110,15 @@ export class AuthService {
       return null;
     }
 
+    const permisos: string[] =
+      usuario.rol.rolPermisos?.map((rp) => rp.permiso.permisoNombre) ?? [];
+
     return {
       usuarioId: usuario.usuarioId,
       usuarioNombre: usuario.usuarioNombre,
       usuarioUsuario: usuario.usuarioUsuario,
       rol: usuario.rol,
+      permisos,
     };
   }
 

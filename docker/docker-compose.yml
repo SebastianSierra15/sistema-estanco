@@ -41,54 +41,56 @@ services:
       timeout: 5s
       retries: 5
 
-  # Backend API (NestJS)
-  backend:
-    build:
-      context: ../backend
-      dockerfile: Dockerfile
-    container_name: sistema-estanco-backend
-    environment:
-      NODE_ENV: ${NODE_ENV:-development}
-      PORT: 4200
-      DATABASE_URL: postgresql://${POSTGRES_USER:-estanco_user}:${POSTGRES_PASSWORD:-estanco_password}@postgres:5432/${POSTGRES_DB:-sistema_estanco}?schema=public
-      MONGODB_URI: mongodb://${MONGO_USER:-estanco_user}:${MONGO_PASSWORD:-estanco_password}@mongodb:27017/${MONGO_DB:-sistema_estanco_logs}?authSource=admin
-      JWT_SECRET: ${JWT_SECRET:-your-secret-key-change-in-production}
-      FRONTEND_URL: http://localhost:3200
-    ports:
-      - "4200:4200"
-    volumes:
-      - ../backend/src:/app/src
-      - ../backend/prisma:/app/prisma
-      - /app/node_modules
-    networks:
-      - sistema-estanco-network
-    depends_on:
-      postgres:
-        condition: service_healthy
-      mongodb:
-        condition: service_healthy
-    command: npm run start:dev
+  # # Backend API (NestJS)
+  # backend:
+  #   build:
+  #     context: ../backend
+  #     dockerfile: Dockerfile
+  #   container_name: sistema-estanco-backend
+  #   environment:
+  #     NODE_ENV: ${NODE_ENV:-development}
+  #     PORT: 4200
+  #     DATABASE_URL: postgresql://${POSTGRES_USER:-estanco_user}:${POSTGRES_PASSWORD:-estanco_password}@postgres:5432/${POSTGRES_DB:-sistema_estanco}?schema=public
+  #     MONGODB_URI: mongodb://${MONGO_USER:-estanco_user}:${MONGO_PASSWORD:-estanco_password}@mongodb:27017/${MONGO_DB:-sistema_estanco_logs}?authSource=admin
+  #     JWT_SECRET: ${JWT_SECRET:-your-secret-key-change-in-production}
+  #     FRONTEND_URL: http://localhost:3200
+  #   ports:
+  #     - "4200:4200"
+  #   volumes:
+  #     - ../backend/src:/app/src
+  #     - ../backend/prisma:/app/prisma
+  #     - /app/node_modules
+  #   networks:
+  #     - sistema-estanco-network
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #     mongodb:
+  #       condition: service_healthy
+  #   command: npm run start:dev
 
-  # Frontend (Next.js)
-  frontend:
-    build:
-      context: ../frontend
-      dockerfile: Dockerfile
-    container_name: sistema-estanco-frontend
-    environment:
-      NODE_ENV: ${NODE_ENV:-development}
-      NEXT_PUBLIC_API_URL: http://localhost:4200
-    ports:
-      - "3200:3200"
-    volumes:
-      - ../frontend:/app
-      - /app/node_modules
-      - /app/.next
-    networks:
-      - sistema-estanco-network
-    depends_on:
-      - backend
-    command: npm run dev
+  # # Frontend (Next.js)
+  # frontend:
+  #   build:
+  #     context: ../frontend
+  #     dockerfile: Dockerfile
+  #   container_name: sistema-estanco-frontend
+  #   environment:
+  #     NODE_ENV: ${NODE_ENV:-development}
+  #     NEXTAUTH_URL: http://localhost:3200
+  #     NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
+  #     NEXT_PUBLIC_API_URL: http://localhost:4200
+  #   ports:
+  #     - "3200:3200"
+  #   volumes:
+  #     - ../frontend:/app
+  #     - /app/node_modules
+  #     - /app/.next
+  #   networks:
+  #     - sistema-estanco-network
+  #   depends_on:
+  #     - backend
+  #   command: npm run dev
 
 volumes:
   postgres_data:

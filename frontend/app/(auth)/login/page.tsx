@@ -1,22 +1,49 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useAuth } from '@/lib/hooks/use-auth';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { useState, useEffect } from "react";
+import { signIn, useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { toast } from "react-hot-toast";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 export default function LoginPage() {
-  const [usuario, setUsuario] = useState('');
-  const [contrasena, setContrasena] = useState('');
-  const { login, isLoggingIn } = useAuth();
+  const { data: session } = useSession();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (session) {
+      router.replace("/dashboard");
+    }
+  }, [session]);
+
+  const [usuario, setUsuario] = useState("");
+  const [contrasena, setContrasena] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!usuario || !contrasena) {
+
+    setIsLoading(true);
+
+    const result = await signIn("credentials", {
+      usuario,
+      contrasena,
+      redirect: false,
+    });
+
+    if (!result?.error) {
+      router.push("/dashboard");
+    }
+
+    if (result?.error) {
+      toast.error("Credenciales incorrectas");
+      setIsLoading(false);
       return;
     }
-    login({ usuario, contrasena });
+
+    setIsLoading(false);
   };
 
   return (
@@ -30,6 +57,7 @@ export default function LoginPage() {
             Inicia sesión en tu cuenta
           </p>
         </div>
+
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-4">
             <div>
@@ -63,12 +91,8 @@ export default function LoginPage() {
           </div>
 
           <div>
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={isLoggingIn}
-            >
-              {isLoggingIn ? 'Iniciando sesión...' : 'Iniciar Sesión'}
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? "Iniciando sesión..." : "Iniciar Sesión"}
             </Button>
           </div>
         </form>

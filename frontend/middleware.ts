@@ -1,28 +1,68 @@
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+import { withAuth } from "next-auth/middleware";
 
-export function middleware(request: NextRequest) {
-  const token = request.cookies.get('token')?.value;
-  const { pathname } = request.nextUrl;
+/**
+ * MAPEO DE PERMISOS POR RUTA
+ */
+const permissionMap: Record<string, string[]> = {
+  "/usuarios": ["ver_usuarios"],
+  "/usuarios/crear": ["crear_usuarios"],
+  "/usuarios/editar": ["editar_usuarios"],
+  "/usuarios/eliminar": ["eliminar_usuarios"],
 
-  // Rutas públicas
-  const publicPaths = ['/login'];
-  const isPublicPath = publicPaths.includes(pathname);
+  "/mesas-canchas": ["ver_mesas"],
+  "/mesas-canchas/gestionar": ["gestionar_mesas"],
 
-  // Si no hay token y no es ruta pública, redirigir a login
-  if (!token && !isPublicPath) {
-    return NextResponse.redirect(new URL('/login', request.url));
-  }
+  "/inventario": ["ver_inventario"],
+  "/inventario/gestionar": ["gestionar_inventario"],
 
-  // Si hay token y está en login, redirigir a dashboard
-  if (token && pathname === '/login') {
-    return NextResponse.redirect(new URL('/dashboard', request.url));
-  }
+  "/ventas": ["ver_ventas"],
+  "/ventas/crear": ["crear_ventas"],
 
-  return NextResponse.next();
-}
+  "/reportes": ["ver_reportes"],
 
-export const config = {
-  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
+  "/configuracion": ["gestionar_configuracion"],
 };
 
+/**
+ * Verifica si el usuario tiene al menos UN permiso requerido
+ */
+function hasPermission(pathname: string, permisosUsuario: string[]): boolean {
+  for (const route in permissionMap) {
+    if (pathname.startsWith(route)) {
+      const requiredPerms = permissionMap[route];
+      return requiredPerms.some((perm) => permisosUsuario.includes(perm));
+    }
+  }
+  return true; // rutas no mapeadas → acceso permitido
+}
+
+export default withAuth(
+  function middleware(req: NextRequest) {
+    const token = req.nextauth.token as any;
+    const permisos = token?.permisos || [];
+    const pathname = req.nextUrl.pathname;
+
+    if (!hasPermission(pathname, permisos)) {
+      return NextResponse.redirect(new URL("/403", req.url));
+    }
+  },
+  {
+    callbacks: {
+      authorized: ({ token }) => !!token,
+    },
+  }
+);
+
+export const config = {
+  matcher: [
+    "/dashboard/:path*",
+    "/usuarios/:path*",
+    "/mesas-canchas/:path*",
+    "/inventario/:path*",
+    "/ventas/:path*",
+    "/reportes/:path*",
+    "/configuracion/:path*",
+  ],
+};
